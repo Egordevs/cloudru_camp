@@ -1,0 +1,62 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: ns1
+  labels:
+    name: myapp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: ns1  
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: nginx
+        image: egordevs/cloudru_camp
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          tcpSocket:
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name      
+          - name: UUID
+            value: "$(POD_NAME)"
+          - name: AUTHOR
+            value: egordevs 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myservice1
+  namespace: ns1
+spec:
+  type: ClusterIP
+  selector:
+    app: myapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

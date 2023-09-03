@@ -1,0 +1,48 @@
+---
+- name: Create cloudru user and configure SSH
+  hosts: localhost
+  vars:
+    user: "cloudru"
+    password: "cloudpass"
+    
+  tasks:
+    - name: "Create user"
+      ansible.builtin.user:
+        name: "{{ user }}"
+        password: "{{ password | password_hash('sha512') }}"
+        create_home: true
+        shell: /bin/bash
+        state: present
+
+    - name: Copy SSH authorized key for {{ user }}
+      authorized_key:
+        user: "{{ user }}"
+        key: "{{ lookup('file', './cloudru.pub') }}"
+        state: present
+
+    - name: Enable SSH key authentication
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      become: yes
+      notify:
+        - restart ssh
+
+    - name: Disable root login
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+      become: yes
+      notify:
+        - restart ssh
+
+  handlers:
+   - name: restart ssh
+     systemd:
+       name: sshd
+       state: restarted
+...

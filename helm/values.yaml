@@ -1,0 +1,4 @@
+image:
+  repository: egordevs/cloudru_camp
+AUTHOR: "egordevs"
+replicaCount: 3
